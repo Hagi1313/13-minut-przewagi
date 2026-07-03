@@ -139,7 +139,8 @@ function HomeScreen({
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.heroCard}>
-        <Text style={styles.badge}>MVP 0.2</Text>
+        <Text style={styles.badge}>MVP 0.3
+      </Text>
 
         <Text style={styles.title}>13 Minut Przewagi</Text>
 
