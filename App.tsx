@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -150,7 +151,13 @@ function HomeScreen({
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.heroCard}>
-        <Text style={styles.badge}>MVP 0.4</Text>
+        <Image
+          source={require('./assets/logo-main.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        <Text style={styles.badge}>MVP 0.5</Text>
 
         <Text style={styles.title}>13 Minut Przewagi</Text>
 
@@ -189,6 +196,7 @@ function LibraryScreen({
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.contentCard}>
         <Text style={styles.screenTitle}>Biblioteka</Text>
+
         <Text style={styles.screenLead}>
           Wybierz lekcję, odsłuchaj najważniejsze idee i od razu przejdź do
           działania.
@@ -482,10 +490,25 @@ function formatSeconds(seconds: number | undefined) {
     .padStart(2, '0')}`;
 }
 
+const colors = {
+  background: '#050D1F',
+  surface: '#081528',
+  surfaceSoft: '#0B1B33',
+  surfaceDeep: '#061020',
+  border: '#22324F',
+  borderStrong: '#3B4A67',
+  text: '#F8FAFC',
+  textMuted: '#AEB9CC',
+  textSoft: '#CBD5E1',
+  gold: '#D9A441',
+  goldSoft: '#E5B85A',
+  goldDark: '#8A620B',
+};
+
 const styles = StyleSheet.create({
   app: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -497,89 +520,95 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingBottom: 110,
   },
+  logo: {
+    width: '100%',
+    height: 150,
+    marginBottom: 18,
+    borderRadius: 22,
+  },
   heroCard: {
     width: '100%',
     maxWidth: 540,
-    backgroundColor: '#111827',
-    borderRadius: 28,
+    backgroundColor: colors.surface,
+    borderRadius: 30,
     padding: 28,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
   },
   contentCard: {
     width: '100%',
     maxWidth: 720,
-    backgroundColor: '#111827',
-    borderRadius: 28,
+    backgroundColor: colors.surface,
+    borderRadius: 30,
     padding: 28,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
   },
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#F59E0B',
-    color: '#111827',
+    backgroundColor: colors.gold,
+    color: colors.surfaceDeep,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '900',
     marginBottom: 20,
     textTransform: 'uppercase',
   },
   title: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 42,
     fontWeight: '900',
     lineHeight: 48,
     marginBottom: 16,
   },
   subtitle: {
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 20,
     lineHeight: 30,
     marginBottom: 18,
   },
   description: {
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 16,
     lineHeight: 25,
     marginBottom: 28,
   },
   screenTitle: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 34,
     fontWeight: '900',
     lineHeight: 40,
     marginBottom: 12,
   },
   screenLead: {
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 17,
     lineHeight: 26,
     marginBottom: 16,
   },
   meta: {
-    color: '#F59E0B',
+    color: colors.gold,
     fontSize: 15,
     fontWeight: '800',
     marginBottom: 18,
   },
   bodyText: {
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 17,
     lineHeight: 27,
   },
   sectionTitle: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 21,
     fontWeight: '900',
     marginBottom: 12,
   },
   lessonCard: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
     borderRadius: 22,
     padding: 20,
   },
@@ -589,81 +618,81 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   lessonCategory: {
-    color: '#F59E0B',
+    color: colors.gold,
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '900',
     textTransform: 'uppercase',
   },
   lessonDuration: {
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '700',
   },
   lessonTitle: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 22,
     fontWeight: '900',
     marginBottom: 6,
   },
   lessonSource: {
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 15,
     fontWeight: '700',
     marginBottom: 10,
   },
   lessonDescription: {
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 15,
     lineHeight: 23,
   },
   playerCard: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: colors.borderStrong,
     borderRadius: 22,
     padding: 20,
     marginTop: 8,
     marginBottom: 28,
   },
   playerTitle: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '900',
     marginBottom: 8,
   },
   playerTime: {
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 16,
     marginBottom: 16,
   },
   playButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: colors.gold,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
   playButtonText: {
-    color: '#111827',
+    color: colors.surfaceDeep,
     fontSize: 16,
     fontWeight: '900',
   },
   replayButton: {
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: colors.borderStrong,
     borderRadius: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
   replayButtonText: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '800',
   },
   actionStep: {
     flexDirection: 'row',
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
@@ -672,8 +701,8 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#F59E0B',
-    color: '#111827',
+    backgroundColor: colors.gold,
+    color: colors.surfaceDeep,
     textAlign: 'center',
     lineHeight: 30,
     fontWeight: '900',
@@ -681,33 +710,33 @@ const styles = StyleSheet.create({
   },
   actionText: {
     flex: 1,
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 15,
     lineHeight: 23,
   },
   implementationCard: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
     borderRadius: 22,
     padding: 20,
     marginBottom: 14,
   },
   implementationStatus: {
-    color: '#F59E0B',
+    color: colors.gold,
     fontSize: 13,
     fontWeight: '900',
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   implementationTitle: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '900',
     marginBottom: 8,
   },
   implementationText: {
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 15,
     lineHeight: 24,
   },
@@ -718,78 +747,78 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
     borderRadius: 22,
     padding: 20,
     marginRight: 12,
   },
   statCardLast: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
     borderRadius: 22,
     padding: 20,
   },
   statNumber: {
-    color: '#F59E0B',
+    color: colors.gold,
     fontSize: 34,
     fontWeight: '900',
     marginBottom: 4,
   },
   statLabel: {
-    color: '#CBD5E1',
+    color: colors.textSoft,
     fontSize: 14,
     fontWeight: '700',
   },
   profileNote: {
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
     borderRadius: 22,
     padding: 20,
   },
   profileNoteTitle: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '900',
     marginBottom: 8,
   },
   profileNoteText: {
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 15,
     lineHeight: 24,
   },
   primaryButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: colors.gold,
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
   },
   primaryButtonText: {
-    color: '#111827',
+    color: colors.surfaceDeep,
     fontSize: 16,
     fontWeight: '900',
   },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: colors.borderStrong,
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#F8FAFC',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '800',
   },
   bottomNavigation: {
     height: 78,
-    backgroundColor: '#111827',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#334155',
+    borderTopColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
@@ -806,15 +835,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderRadius: 16,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.surfaceDeep,
   },
   navText: {
-    color: '#94A3B8',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '800',
   },
   navTextActive: {
-    color: '#F59E0B',
+    color: colors.goldSoft,
     fontSize: 13,
     fontWeight: '900',
   },
