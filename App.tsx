@@ -19,7 +19,8 @@ type Lesson = {
   actionSteps: string[];
 };
 
-type Screen = 'home' | 'library' | 'lesson';
+type MainScreen = 'home' | 'library' | 'implementations' | 'profile';
+type Screen = MainScreen | 'lesson';
 
 const lessons: Lesson[] = [
   {
@@ -97,32 +98,41 @@ export default function App() {
     setScreen('lesson');
   };
 
+  const goToMainScreen = (nextScreen: MainScreen) => {
+    setSelectedLesson(null);
+    setScreen(nextScreen);
+  };
+
   return (
     <View style={styles.app}>
       <StatusBar style="light" />
 
-      {screen === 'home' && (
-        <HomeScreen
-          featuredLesson={lessons[0]}
-          onOpenLibrary={() => setScreen('library')}
-          onOpenLesson={openLesson}
-        />
-      )}
+      <View style={styles.content}>
+        {screen === 'home' && (
+          <HomeScreen
+            featuredLesson={lessons[0]}
+            onOpenLibrary={() => goToMainScreen('library')}
+            onOpenLesson={openLesson}
+          />
+        )}
 
-      {screen === 'library' && (
-        <LibraryScreen
-          lessons={lessons}
-          onBackHome={() => setScreen('home')}
-          onOpenLesson={openLesson}
-        />
-      )}
+        {screen === 'library' && (
+          <LibraryScreen lessons={lessons} onOpenLesson={openLesson} />
+        )}
 
-      {screen === 'lesson' && selectedLesson && (
-        <LessonDetailScreen
-          lesson={selectedLesson}
-          onBackLibrary={() => setScreen('library')}
-        />
-      )}
+        {screen === 'lesson' && selectedLesson && (
+          <LessonDetailScreen
+            lesson={selectedLesson}
+            onBackLibrary={() => goToMainScreen('library')}
+          />
+        )}
+
+        {screen === 'implementations' && <ImplementationsScreen />}
+
+        {screen === 'profile' && <ProfileScreen />}
+      </View>
+
+      <BottomNavigation currentScreen={screen} onNavigate={goToMainScreen} />
     </View>
   );
 }
@@ -139,8 +149,7 @@ function HomeScreen({
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.heroCard}>
-        <Text style={styles.badge}>MVP 0.3
-      </Text>
+        <Text style={styles.badge}>MVP 0.3</Text>
 
         <Text style={styles.title}>13 Minut Przewagi</Text>
 
@@ -159,7 +168,10 @@ function HomeScreen({
 
         <SectionTitle title="Dzisiejsza przewaga" />
 
-        <LessonCard lesson={featuredLesson} onPress={() => onOpenLesson(featuredLesson)} />
+        <LessonCard
+          lesson={featuredLesson}
+          onPress={() => onOpenLesson(featuredLesson)}
+        />
       </View>
     </ScrollView>
   );
@@ -167,11 +179,9 @@ function HomeScreen({
 
 function LibraryScreen({
   lessons,
-  onBackHome,
   onOpenLesson,
 }: {
   lessons: Lesson[];
-  onBackHome: () => void;
   onOpenLesson: (lesson: Lesson) => void;
 }) {
   return (
@@ -190,10 +200,6 @@ function LibraryScreen({
             <LessonCard lesson={lesson} onPress={() => onOpenLesson(lesson)} />
           </View>
         ))}
-
-        <View style={styles.spacer16} />
-
-        <AppButton label="Wróć na start" onPress={onBackHome} secondary />
       </View>
     </ScrollView>
   );
@@ -210,6 +216,7 @@ function LessonDetailScreen({
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.contentCard}>
         <Text style={styles.badge}>{lesson.category}</Text>
+
         <Text style={styles.screenTitle}>{lesson.title}</Text>
 
         <Text style={styles.meta}>
@@ -243,9 +250,142 @@ function LessonDetailScreen({
 
         <View style={styles.spacer16} />
 
-        <AppButton label="Wróć do biblioteki" onPress={onBackLibrary} secondary />
+        <AppButton
+          label="Wróć do biblioteki"
+          onPress={onBackLibrary}
+          secondary
+        />
       </View>
     </ScrollView>
+  );
+}
+
+function ImplementationsScreen() {
+  return (
+    <ScrollView contentContainerStyle={styles.page}>
+      <View style={styles.contentCard}>
+        <Text style={styles.screenTitle}>Moje wdrożenia</Text>
+
+        <Text style={styles.screenLead}>
+          Tu będą trafiać konkretne działania po lekcjach. Na razie to wersja
+          testowa, ale właśnie tutaj aplikacja zacznie różnić się od zwykłych
+          streszczeń.
+        </Text>
+
+        <View style={styles.implementationCard}>
+          <Text style={styles.implementationStatus}>Dzisiaj</Text>
+          <Text style={styles.implementationTitle}>
+            Jedna przewaga do wdrożenia
+          </Text>
+          <Text style={styles.implementationText}>
+            Wybierz jedną lekcję z biblioteki i zapisz jedną rzecz, którą
+            realnie zrobisz w ciągu najbliższych dwudziestu czterech godzin.
+          </Text>
+        </View>
+
+        <View style={styles.implementationCard}>
+          <Text style={styles.implementationStatus}>Wkrótce</Text>
+          <Text style={styles.implementationTitle}>Lista zadań po lekcjach</Text>
+          <Text style={styles.implementationText}>
+            W kolejnych wersjach dodamy odhaczanie zadań, historię postępów i
+            tygodniowy licznik wdrożeń.
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
+function ProfileScreen() {
+  return (
+    <ScrollView contentContainerStyle={styles.page}>
+      <View style={styles.contentCard}>
+        <Text style={styles.screenTitle}>Profil</Text>
+
+        <Text style={styles.screenLead}>
+          Twoje statystyki, ulubione lekcje i ustawienia konta pojawią się tutaj
+          w kolejnych etapach.
+        </Text>
+
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>4</Text>
+            <Text style={styles.statLabel}>lekcje testowe</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statLabel}>ukończonych</Text>
+          </View>
+        </View>
+
+        <View style={styles.profileNote}>
+          <Text style={styles.profileNoteTitle}>Plan rozwoju</Text>
+          <Text style={styles.profileNoteText}>
+            Później dodamy logowanie, premium, historię słuchania i zapis
+            postępów. Na razie budujemy fundament produktu.
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
+function BottomNavigation({
+  currentScreen,
+  onNavigate,
+}: {
+  currentScreen: Screen;
+  onNavigate: (screen: MainScreen) => void;
+}) {
+  const activeScreen: MainScreen =
+    currentScreen === 'lesson' ? 'library' : currentScreen;
+
+  return (
+    <View style={styles.bottomNavigation}>
+      <NavigationItem
+        label="Start"
+        active={activeScreen === 'home'}
+        onPress={() => onNavigate('home')}
+      />
+
+      <NavigationItem
+        label="Biblioteka"
+        active={activeScreen === 'library'}
+        onPress={() => onNavigate('library')}
+      />
+
+      <NavigationItem
+        label="Wdrożenia"
+        active={activeScreen === 'implementations'}
+        onPress={() => onNavigate('implementations')}
+      />
+
+      <NavigationItem
+        label="Profil"
+        active={activeScreen === 'profile'}
+        onPress={() => onNavigate('profile')}
+      />
+    </View>
+  );
+}
+
+function NavigationItem({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={active ? styles.navItemActive : styles.navItem}
+    >
+      <Text style={active ? styles.navTextActive : styles.navText}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -263,7 +403,9 @@ function AppButton({
       onPress={onPress}
       style={secondary ? styles.secondaryButton : styles.primaryButton}
     >
-      <Text style={secondary ? styles.secondaryButtonText : styles.primaryButtonText}>
+      <Text
+        style={secondary ? styles.secondaryButtonText : styles.primaryButtonText}
+      >
         {label}
       </Text>
     </Pressable>
@@ -300,11 +442,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F172A',
   },
+  content: {
+    flex: 1,
+  },
   page: {
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    paddingBottom: 110,
   },
   heroCard: {
     width: '100%',
@@ -482,6 +628,75 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23,
   },
+  implementationCard: {
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 22,
+    padding: 20,
+    marginBottom: 14,
+  },
+  implementationStatus: {
+    color: '#F59E0B',
+    fontSize: 13,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  implementationTitle: {
+    color: '#F8FAFC',
+    fontSize: 20,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  implementationText: {
+    color: '#94A3B8',
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    marginTop: 8,
+    marginBottom: 18,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 22,
+    padding: 20,
+    marginRight: 12,
+  },
+  statNumber: {
+    color: '#F59E0B',
+    fontSize: 34,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  statLabel: {
+    color: '#CBD5E1',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  profileNote: {
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 22,
+    padding: 20,
+  },
+  profileNoteTitle: {
+    color: '#F8FAFC',
+    fontSize: 20,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  profileNoteText: {
+    color: '#94A3B8',
+    fontSize: 15,
+    lineHeight: 24,
+  },
   primaryButton: {
     backgroundColor: '#F59E0B',
     paddingVertical: 16,
@@ -504,6 +719,39 @@ const styles = StyleSheet.create({
     color: '#F8FAFC',
     fontSize: 16,
     fontWeight: '800',
+  },
+  bottomNavigation: {
+    height: 78,
+    backgroundColor: '#111827',
+    borderTopWidth: 1,
+    borderTopColor: '#334155',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 10,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 16,
+  },
+  navItemActive: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 16,
+    backgroundColor: '#0F172A',
+  },
+  navText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  navTextActive: {
+    color: '#F59E0B',
+    fontSize: 13,
+    fontWeight: '900',
   },
   spacer16: {
     height: 16,
