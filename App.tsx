@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import {
   Pressable,
   ScrollView,
@@ -149,7 +150,7 @@ function HomeScreen({
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.heroCard}>
-        <Text style={styles.badge}>MVP 0.3</Text>
+        <Text style={styles.badge}>MVP 0.4</Text>
 
         <Text style={styles.title}>13 Minut Przewagi</Text>
 
@@ -212,6 +213,26 @@ function LessonDetailScreen({
   lesson: Lesson;
   onBackLibrary: () => void;
 }) {
+  const player = useAudioPlayer(require('./assets/audio/sample.mp3'));
+  const status = useAudioPlayerStatus(player);
+
+  const currentTime = formatSeconds(status.currentTime);
+  const duration = formatSeconds(status.duration);
+
+  const handlePlayPause = () => {
+    if (status.playing) {
+      player.pause();
+      return;
+    }
+
+    player.play();
+  };
+
+  const handleReplay = () => {
+    player.seekTo(0);
+    player.play();
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <View style={styles.contentCard}>
@@ -227,10 +248,21 @@ function LessonDetailScreen({
 
         <View style={styles.playerCard}>
           <Text style={styles.playerTitle}>Odtwarzacz audio</Text>
-          <Text style={styles.playerTime}>00:00 / 13:00</Text>
 
-          <Pressable style={styles.playButton}>
-            <Text style={styles.playButtonText}>Odtwórz</Text>
+          <Text style={styles.playerTime}>
+            {currentTime} / {duration}
+          </Text>
+
+          <Pressable style={styles.playButton} onPress={handlePlayPause}>
+            <Text style={styles.playButtonText}>
+              {status.playing ? 'Pauza' : 'Odtwórz'}
+            </Text>
+          </Pressable>
+
+          <View style={styles.spacer12} />
+
+          <Pressable style={styles.replayButton} onPress={handleReplay}>
+            <Text style={styles.replayButtonText}>Od początku</Text>
           </Pressable>
         </View>
 
@@ -313,7 +345,7 @@ function ProfileScreen() {
             <Text style={styles.statLabel}>lekcje testowe</Text>
           </View>
 
-          <View style={styles.statCard}>
+          <View style={styles.statCardLast}>
             <Text style={styles.statNumber}>0</Text>
             <Text style={styles.statLabel}>ukończonych</Text>
           </View>
@@ -435,6 +467,19 @@ function LessonCard({
 
 function SectionTitle({ title }: { title: string }) {
   return <Text style={styles.sectionTitle}>{title}</Text>;
+}
+
+function formatSeconds(seconds: number | undefined) {
+  const safeSeconds =
+    typeof seconds === 'number' && Number.isFinite(seconds) ? seconds : 0;
+
+  const roundedSeconds = Math.floor(safeSeconds);
+  const minutes = Math.floor(roundedSeconds / 60);
+  const remainingSeconds = roundedSeconds % 60;
+
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
+    .toString()
+    .padStart(2, '0')}`;
 }
 
 const styles = StyleSheet.create({
@@ -602,6 +647,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
   },
+  replayButton: {
+    borderWidth: 1,
+    borderColor: '#475569',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  replayButtonText: {
+    color: '#F8FAFC',
+    fontSize: 15,
+    fontWeight: '800',
+  },
   actionStep: {
     flexDirection: 'row',
     backgroundColor: '#0F172A',
@@ -667,6 +724,14 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 20,
     marginRight: 12,
+  },
+  statCardLast: {
+    flex: 1,
+    backgroundColor: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 22,
+    padding: 20,
   },
   statNumber: {
     color: '#F59E0B',
@@ -752,6 +817,9 @@ const styles = StyleSheet.create({
     color: '#F59E0B',
     fontSize: 13,
     fontWeight: '900',
+  },
+  spacer12: {
+    height: 12,
   },
   spacer16: {
     height: 16,
