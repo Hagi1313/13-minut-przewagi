@@ -157,7 +157,7 @@ function HomeScreen({
           resizeMode="contain"
         />
 
-        <Text style={styles.badge}>MVP 0.5</Text>
+        <Text style={styles.badge}>MVP 0.6</Text>
 
         <Text style={styles.title}>13 Minut Przewagi</Text>
 
@@ -166,13 +166,12 @@ function HomeScreen({
         </Text>
 
         <Text style={styles.description}>
-          Nie tylko słuchasz. Wdrażasz. Po każdej lekcji dostajesz konkretny
-          wniosek i trzy rzeczy do zrobienia.
+          Słuchasz. Wyciągasz wnioski. Wdrażasz jedną konkretną przewagę.
         </Text>
 
         <AppButton label="Przejdź do biblioteki" onPress={onOpenLibrary} />
 
-        <View style={styles.spacer24} />
+        <View style={styles.spacer20} />
 
         <SectionTitle title="Dzisiejsza przewaga" />
 
@@ -198,11 +197,10 @@ function LibraryScreen({
         <Text style={styles.screenTitle}>Biblioteka</Text>
 
         <Text style={styles.screenLead}>
-          Wybierz lekcję, odsłuchaj najważniejsze idee i od razu przejdź do
-          działania.
+          Wybierz lekcję, odsłuchaj najważniejsze idee i przejdź do działania.
         </Text>
 
-        <View style={styles.spacer16} />
+        <View style={styles.spacer12} />
 
         {lessons.map((lesson) => (
           <View key={lesson.id} style={styles.cardSpacing}>
@@ -267,7 +265,7 @@ function LessonDetailScreen({
             </Text>
           </Pressable>
 
-          <View style={styles.spacer12} />
+          <View style={styles.spacer10} />
 
           <Pressable style={styles.replayButton} onPress={handleReplay}>
             <Text style={styles.replayButtonText}>Od początku</Text>
@@ -277,7 +275,7 @@ function LessonDetailScreen({
         <SectionTitle title="Najważniejszy wniosek" />
         <Text style={styles.bodyText}>{lesson.keyTakeaway}</Text>
 
-        <View style={styles.spacer24} />
+        <View style={styles.spacer20} />
 
         <SectionTitle title="3 rzeczy do wdrożenia" />
 
@@ -307,9 +305,8 @@ function ImplementationsScreen() {
         <Text style={styles.screenTitle}>Moje wdrożenia</Text>
 
         <Text style={styles.screenLead}>
-          Tu będą trafiać konkretne działania po lekcjach. Na razie to wersja
-          testowa, ale właśnie tutaj aplikacja zacznie różnić się od zwykłych
-          streszczeń.
+          Tu będą trafiać konkretne działania po lekcjach. To będzie największa
+          przewaga aplikacji.
         </Text>
 
         <View style={styles.implementationCard}>
@@ -318,8 +315,8 @@ function ImplementationsScreen() {
             Jedna przewaga do wdrożenia
           </Text>
           <Text style={styles.implementationText}>
-            Wybierz jedną lekcję z biblioteki i zapisz jedną rzecz, którą
-            realnie zrobisz w ciągu najbliższych dwudziestu czterech godzin.
+            Wybierz jedną lekcję i zapisz jedną rzecz, którą realnie zrobisz w
+            ciągu najbliższych dwudziestu czterech godzin.
           </Text>
         </View>
 
@@ -327,8 +324,8 @@ function ImplementationsScreen() {
           <Text style={styles.implementationStatus}>Wkrótce</Text>
           <Text style={styles.implementationTitle}>Lista zadań po lekcjach</Text>
           <Text style={styles.implementationText}>
-            W kolejnych wersjach dodamy odhaczanie zadań, historię postępów i
-            tygodniowy licznik wdrożeń.
+            Dodamy odhaczanie zadań, historię postępów i tygodniowy licznik
+            wdrożeń.
           </Text>
         </View>
       </View>
@@ -363,7 +360,7 @@ function ProfileScreen() {
           <Text style={styles.profileNoteTitle}>Plan rozwoju</Text>
           <Text style={styles.profileNoteText}>
             Później dodamy logowanie, premium, historię słuchania i zapis
-            postępów. Na razie budujemy fundament produktu.
+            postępów.
           </Text>
         </View>
       </View>
@@ -493,7 +490,6 @@ function formatSeconds(seconds: number | undefined) {
 const colors = {
   background: '#050D1F',
   surface: '#081528',
-  surfaceSoft: '#0B1B33',
   surfaceDeep: '#061020',
   border: '#22324F',
   borderStrong: '#3B4A67',
@@ -502,7 +498,6 @@ const colors = {
   textSoft: '#CBD5E1',
   gold: '#D9A441',
   goldSoft: '#E5B85A',
-  goldDark: '#8A620B',
 };
 
 const styles = StyleSheet.create({
@@ -517,30 +512,30 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    paddingBottom: 110,
+    padding: 16,
+    paddingBottom: 92,
   },
   logo: {
     width: '100%',
-    height: 150,
-    marginBottom: 18,
-    borderRadius: 22,
+    height: 108,
+    marginBottom: 14,
+    borderRadius: 18,
   },
   heroCard: {
     width: '100%',
-    maxWidth: 540,
+    maxWidth: 520,
     backgroundColor: colors.surface,
-    borderRadius: 30,
-    padding: 28,
+    borderRadius: 24,
+    padding: 22,
     borderWidth: 1,
     borderColor: colors.border,
   },
   contentCard: {
     width: '100%',
-    maxWidth: 720,
+    maxWidth: 680,
     backgroundColor: colors.surface,
-    borderRadius: 30,
-    padding: 28,
+    borderRadius: 24,
+    padding: 22,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -548,127 +543,127 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: colors.gold,
     color: colors.surfaceDeep,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
-    marginBottom: 20,
+    marginBottom: 14,
     textTransform: 'uppercase',
   },
   title: {
     color: colors.text,
-    fontSize: 42,
+    fontSize: 34,
     fontWeight: '900',
-    lineHeight: 48,
-    marginBottom: 16,
+    lineHeight: 39,
+    marginBottom: 12,
   },
   subtitle: {
     color: colors.textSoft,
-    fontSize: 20,
-    lineHeight: 30,
-    marginBottom: 18,
+    fontSize: 17,
+    lineHeight: 25,
+    marginBottom: 12,
   },
   description: {
     color: colors.textMuted,
-    fontSize: 16,
-    lineHeight: 25,
-    marginBottom: 28,
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 22,
   },
   screenTitle: {
     color: colors.text,
-    fontSize: 34,
+    fontSize: 30,
     fontWeight: '900',
-    lineHeight: 40,
-    marginBottom: 12,
+    lineHeight: 36,
+    marginBottom: 10,
   },
   screenLead: {
     color: colors.textSoft,
-    fontSize: 17,
-    lineHeight: 26,
-    marginBottom: 16,
+    fontSize: 15,
+    lineHeight: 23,
+    marginBottom: 14,
   },
   meta: {
     color: colors.gold,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
-    marginBottom: 18,
+    marginBottom: 14,
   },
   bodyText: {
     color: colors.textSoft,
-    fontSize: 17,
-    lineHeight: 27,
+    fontSize: 15,
+    lineHeight: 24,
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 21,
+    fontSize: 19,
     fontWeight: '900',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   lessonCard: {
     backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 22,
-    padding: 20,
+    borderRadius: 20,
+    padding: 16,
   },
   lessonHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   lessonCategory: {
     color: colors.gold,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   lessonDuration: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   lessonTitle: {
     color: colors.text,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
-    marginBottom: 6,
+    marginBottom: 5,
   },
   lessonSource: {
     color: colors.textSoft,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   lessonDescription: {
     color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 14,
+    lineHeight: 21,
   },
   playerCard: {
     backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 22,
-    padding: 20,
-    marginTop: 8,
-    marginBottom: 28,
+    borderRadius: 20,
+    padding: 16,
+    marginTop: 6,
+    marginBottom: 24,
   },
   playerTitle: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '900',
     marginBottom: 8,
   },
   playerTime: {
     color: colors.textSoft,
-    fontSize: 16,
-    marginBottom: 16,
+    fontSize: 15,
+    marginBottom: 14,
   },
   playButton: {
     backgroundColor: colors.gold,
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderRadius: 15,
+    paddingVertical: 13,
     alignItems: 'center',
   },
   playButtonText: {
@@ -679,13 +674,13 @@ const styles = StyleSheet.create({
   replayButton: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderRadius: 15,
+    paddingVertical: 13,
     alignItems: 'center',
   },
   replayButtonText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
   },
   actionStep: {
@@ -693,159 +688,162 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
   },
   actionNumber: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.gold,
     color: colors.surfaceDeep,
     textAlign: 'center',
-    lineHeight: 30,
+    lineHeight: 28,
     fontWeight: '900',
-    marginRight: 12,
+    marginRight: 10,
   },
   actionText: {
     flex: 1,
     color: colors.textSoft,
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 14,
+    lineHeight: 21,
   },
   implementationCard: {
     backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 22,
-    padding: 20,
-    marginBottom: 14,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
   },
   implementationStatus: {
     color: colors.gold,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: 7,
   },
   implementationTitle: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '900',
-    marginBottom: 8,
+    marginBottom: 7,
   },
   implementationText: {
     color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 22,
   },
   statsGrid: {
     flexDirection: 'row',
     marginTop: 8,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 22,
-    padding: 20,
-    marginRight: 12,
+    borderRadius: 20,
+    padding: 16,
+    marginRight: 10,
   },
   statCardLast: {
     flex: 1,
     backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 22,
-    padding: 20,
+    borderRadius: 20,
+    padding: 16,
   },
   statNumber: {
     color: colors.gold,
-    fontSize: 34,
+    fontSize: 30,
     fontWeight: '900',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   statLabel: {
     color: colors.textSoft,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   profileNote: {
     backgroundColor: colors.surfaceDeep,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 22,
-    padding: 20,
+    borderRadius: 20,
+    padding: 16,
   },
   profileNoteTitle: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '900',
-    marginBottom: 8,
+    marginBottom: 7,
   },
   profileNoteText: {
     color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 22,
   },
   primaryButton: {
     backgroundColor: colors.gold,
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 15,
     alignItems: 'center',
   },
   primaryButtonText: {
     color: colors.surfaceDeep,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
   },
   secondaryButton: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 15,
     alignItems: 'center',
   },
   secondaryButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
   },
   bottomNavigation: {
-    height: 78,
+    height: 68,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
   },
   navItemActive: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
     backgroundColor: colors.surfaceDeep,
   },
   navText: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
   },
   navTextActive: {
     color: colors.goldSoft,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
+  },
+  spacer10: {
+    height: 10,
   },
   spacer12: {
     height: 12,
@@ -853,10 +851,10 @@ const styles = StyleSheet.create({
   spacer16: {
     height: 16,
   },
-  spacer24: {
-    height: 24,
+  spacer20: {
+    height: 20,
   },
   cardSpacing: {
-    marginBottom: 14,
+    marginBottom: 12,
   },
 });
