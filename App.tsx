@@ -12,6 +12,13 @@ import {
 } from 'react-native';
 import { books, categories, userName, type Book } from './src/data/books';
 
+const coverImages: Record<string, any> = {
+  'carnegie.png': require('./assets/covers/carnegie.png'),
+  'potega-nawyku.png': require('./assets/covers/potega-nawyku.png'),
+  'atomowe-nawyki.png': require('./assets/covers/atomowe-nawyki.png'),
+  'esencjalista.png': require('./assets/covers/esencjalista.png'),
+};
+
 type MainScreen = 'home' | 'search' | 'practice' | 'myList' | 'settings';
 type Screen = MainScreen | 'book' | 'category';
 type MyListTab = 'continue' | 'favorites' | 'completed';
@@ -709,6 +716,18 @@ function BookCover({
   book: Book;
   large?: boolean;
 }) {
+  const coverImage = book.coverImage ? coverImages[book.coverImage] : undefined;
+
+  if (coverImage) {
+    return (
+      <Image
+        source={coverImage}
+        style={large ? styles.coverImageLarge : styles.coverImage}
+        resizeMode="cover"
+      />
+    );
+  }
+
   return (
     <View style={large ? styles.bookCoverLarge : styles.bookCover}>
       <Text style={large ? styles.bookCoverTitleLarge : styles.bookCoverTitle}>
@@ -1056,6 +1075,19 @@ const styles = StyleSheet.create({
     marginRight: 14,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
+  },
+  coverImage: {
+    width: 118,
+    height: 154,
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  coverImageLarge: {
+    width: 130,
+    height: 170,
+    borderRadius: 12,
+    marginRight: 16,
   },
   bookCover: {
     width: 118,

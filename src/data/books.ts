@@ -17,6 +17,7 @@ export type PracticalLesson = {
     coverTitle: string;
     coverSubtitle: string;
     coverColor: string;
+coverImage?: string;
     isFeatured?: boolean;
     isNew?: boolean;
     isCompleted?: boolean;
@@ -77,6 +78,7 @@ export type PracticalLesson = {
       coverTitle: 'Jak zdobyć przyjaciół',
       coverSubtitle: 'i zjednać sobie ludzi',
       coverColor: '#F4C2D2',
+      coverImage: 'carnegie.png',
       isFeatured: true,
       progressPercent: 45,
     },
@@ -111,6 +113,7 @@ export type PracticalLesson = {
       ],
       coverTitle: 'Potęga',
       coverSubtitle: 'nawyku',
+      coverImage: 'potega-nawyku.png',
       coverColor: '#E8F1D8',
       isNew: true,
       progressPercent: 20,
