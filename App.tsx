@@ -1,16 +1,33 @@
-import { useMemo, useState } from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import React, { useMemo, useRef, useState } from 'react';
 import {
+  GestureResponderEvent,
   Image,
+  LayoutChangeEvent,
+  PanResponder,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+
 import { books, categories, userName, type Book } from './src/data/books';
+
+const colors = {
+  background: '#050914',
+  card: '#0B101C',
+  cardSoft: '#101725',
+  border: '#30384A',
+  text: '#FFFFFF',
+  muted: '#AEB6C7',
+  gold: '#D9B45A',
+  goldDark: '#8B6A24',
+  input: '#151C2A',
+};
 
 const coverImages: Record<string, any> = {
   'carnegie.png': require('./assets/covers/carnegie.png'),
@@ -19,375 +36,157 @@ const coverImages: Record<string, any> = {
   'esencjalista.png': require('./assets/covers/esencjalista.png'),
 };
 
-type MainScreen = 'home' | 'search' | 'practice' | 'myList' | 'settings';
-type Screen = MainScreen | 'book' | 'category';
-type MyListTab = 'continue' | 'favorites' | 'completed';
+const audioSources: Record<string, any> = {
+  'jak-zdobyc-przyjaciol': require('./assets/audio/jak-zdobyc-przyjaciol-13-minut.mp3'),
+};
 
-export default function App() {
-  const [screen, setScreen] = useState<Screen>('home');
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([
-    'jak-zdobyc-przyjaciol',
-  ]);
+type TabId = 'home' | 'search' | 'practice' | 'library' | 'settings';
 
-  const openBook = (book: Book) => {
-    setSelectedBook(book);
-    setSelectedCategory(null);
-    setScreen('book');
-  };
+function formatSeconds(value?: number | null) {
+  const safeValue = Number.isFinite(value || 0) ? Math.max(0, Math.floor(value || 0)) : 0;
+  const minutes = Math.floor(safeValue / 60);
+  const seconds = safeValue % 60;
 
-  const openCategory = (category: string) => {
-    setSelectedCategory(category);
-    setSelectedBook(null);
-    setScreen('category');
-  };
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
 
-  const goToMainScreen = (nextScreen: MainScreen) => {
-    setSelectedBook(null);
-    setSelectedCategory(null);
-    setScreen(nextScreen);
-  };
+function getBookId(book: Book) {
+  return String((book as any).id || '');
+}
 
-  const toggleFavorite = (bookId: string) => {
-    setFavoriteIds((currentIds) => {
-      if (currentIds.includes(bookId)) {
-        return currentIds.filter((id) => id !== bookId);
-      }
+function getBookTitle(book: Book) {
+  return String((book as any).title || '');
+}
 
-      return [...currentIds, bookId];
-    });
-  };
+function getBookAuthor(book: Book) {
+  return String((book as any).author || '');
+}
+
+function getBookDescription(book: Book) {
+  return String(
+    (book as any).description ||
+      (book as any).bookSummaryDescription ||
+      'Trzynaście minut najważniejszych idei z książki oraz praktyczne lekcje do wdrożenia.'
+  );
+}
+
+function getBookSummaryDescription(book: Book) {
+  return String(
+    (book as any).bookSummaryDescription ||
+      'Najważniejsze idee książki w formie krótkiego, konkretnego nagrania audio.'
+  );
+}
+
+function getPracticalDescription(book: Book) {
+  return String(
+    (book as any).practicalDescription ||
+      'Przykłady, sceny i gotowe sposoby zastosowania idei z książki w codziennym życiu.'
+  );
+}
+
+function getBookCategories(book: Book): string[] {
+  const rawCategories = (book as any).categories;
+
+  if (Array.isArray(rawCategories)) {
+    return rawCategories.map(String);
+  }
+
+  return [];
+}
+
+function getBookCoverName(book: Book) {
+  return String((book as any).coverImage || '');
+}
+
+function BookCover({
+  book,
+  size = 'small',
+}: {
+  book: Book;
+  size?: 'small' | 'large' | 'player';
+}) {
+  const coverName = getBookCoverName(book);
+  const coverSource = coverImages[coverName];
+
+  if (coverSource) {
+    return (
+      <Image
+        source={coverSource}
+        style={
+          size === 'large'
+            ? styles.coverImageLarge
+            : size === 'player'
+              ? styles.coverImagePlayer
+              : styles.coverImage
+        }
+        resizeMode="cover"
+      />
+    );
+  }
 
   return (
-    <View style={styles.app}>
-      <StatusBar style="light" />
-
-      <View style={styles.content}>
-        {screen === 'home' && (
-          <HomeScreen
-            favoriteIds={favoriteIds}
-            onOpenBook={openBook}
-            onOpenCategory={openCategory}
-            onOpenSettings={() => goToMainScreen('settings')}
-            onToggleFavorite={toggleFavorite}
-          />
-        )}
-
-        {screen === 'search' && (
-          <SearchScreen
-            favoriteIds={favoriteIds}
-            onOpenBook={openBook}
-            onOpenCategory={openCategory}
-            onToggleFavorite={toggleFavorite}
-          />
-        )}
-
-        {screen === 'practice' && <PracticeScreen onOpenBook={openBook} />}
-
-        {screen === 'myList' && (
-          <MyListScreen
-            favoriteIds={favoriteIds}
-            onOpenBook={openBook}
-            onOpenSettings={() => goToMainScreen('settings')}
-            onToggleFavorite={toggleFavorite}
-          />
-        )}
-
-        {screen === 'settings' && (
-          <SettingsScreen onBack={() => goToMainScreen('home')} />
-        )}
-
-        {screen === 'category' && selectedCategory && (
-          <CategoryScreen
-            category={selectedCategory}
-            favoriteIds={favoriteIds}
-            onBack={() => goToMainScreen('search')}
-            onOpenBook={openBook}
-            onToggleFavorite={toggleFavorite}
-          />
-        )}
-
-        {screen === 'book' && selectedBook && (
-          <BookScreen
-            book={selectedBook}
-            isFavorite={favoriteIds.includes(selectedBook.id)}
-            onBack={() => goToMainScreen('home')}
-            onToggleFavorite={() => toggleFavorite(selectedBook.id)}
-          />
-        )}
-      </View>
-
-      <BottomNavigation currentScreen={screen} onNavigate={goToMainScreen} />
+    <View
+      style={
+        size === 'large'
+          ? styles.coverFallbackLarge
+          : size === 'player'
+            ? styles.coverFallbackPlayer
+            : styles.coverFallback
+      }
+    >
+      <Text style={styles.coverFallbackNumber}>13</Text>
+      <Text style={styles.coverFallbackText}>MINUT PRZEWAGI</Text>
     </View>
   );
 }
 
-function HomeScreen({
-  favoriteIds,
-  onOpenBook,
-  onOpenCategory,
-  onOpenSettings,
-  onToggleFavorite,
-}: {
-  favoriteIds: string[];
-  onOpenBook: (book: Book) => void;
-  onOpenCategory: (category: string) => void;
-  onOpenSettings: () => void;
-  onToggleFavorite: (bookId: string) => void;
-}) {
-  const featuredBook = books.find((book) => book.isFeatured) ?? books[0];
-  const continueBooks = books.filter((book) => book.progressPercent);
-  const newBooks = books.filter((book) => book.isNew);
-
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.greeting}>Dzień dobry,</Text>
-          <Text style={styles.greetingName}>{userName} 👋</Text>
-        </View>
-
-        <Pressable style={styles.settingsButton} onPress={onOpenSettings}>
-          <Text style={styles.settingsButtonText}>⚙</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.featuredCard}>
-        <Image
-          source={require('./assets/logo-main.png')}
-          style={styles.featuredLogo}
-          resizeMode="contain"
-        />
-
-        <View style={styles.featuredContent}>
-          <Text style={styles.badge}>Wybrane dla Ciebie</Text>
-          <Text style={styles.featuredTitle}>{featuredBook.title}</Text>
-          <Text style={styles.featuredDescription}>
-            13 minut książki + praktyczne lekcje z książki.
-          </Text>
-
-          <Pressable
-            style={styles.smallGoldButton}
-            onPress={() => onOpenBook(featuredBook)}
-          >
-            <Text style={styles.smallGoldButtonText}>Otwórz książkę</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <SectionHeader title="Kontynuuj" />
-
-      <HorizontalBookList
-        booksToShow={continueBooks}
-        favoriteIds={favoriteIds}
-        onOpenBook={onOpenBook}
-        onToggleFavorite={onToggleFavorite}
-      />
-
-      <SectionHeader title="Ostatnio dodane" />
-
-      <HorizontalBookList
-        booksToShow={newBooks}
-        favoriteIds={favoriteIds}
-        onOpenBook={onOpenBook}
-        onToggleFavorite={onToggleFavorite}
-      />
-
-      <SectionHeader title="Kategorie" actionLabel="Pokaż wszystko" />
-
-      <View style={styles.categoryGrid}>
-        {categories.slice(0, 6).map((category) => (
-          <CategoryTile
-            key={category}
-            category={category}
-            onPress={() => onOpenCategory(category)}
-          />
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
-
-function SearchScreen({
-  favoriteIds,
-  onOpenBook,
-  onOpenCategory,
-  onToggleFavorite,
-}: {
-  favoriteIds: string[];
-  onOpenBook: (book: Book) => void;
-  onOpenCategory: (category: string) => void;
-  onToggleFavorite: (bookId: string) => void;
-}) {
-  const [query, setQuery] = useState('');
-
-  const filteredBooks = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    if (!normalizedQuery) {
-      return books;
-    }
-
-    return books.filter((book) => {
-      const searchableText = [
-        book.title,
-        book.author,
-        book.description,
-        ...book.categories,
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return searchableText.includes(normalizedQuery);
-    });
-  }, [query]);
-
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <Text style={styles.screenTitle}>Szukaj</Text>
-
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Tytuł, autor lub tematyka"
-        placeholderTextColor={colors.textMuted}
-        style={styles.searchInput}
-      />
-
-      <SectionHeader
-        title={query.trim() ? 'Wyniki wyszukiwania' : 'Ostatnio dodane'}
-      />
-
-      <VerticalBookList
-        booksToShow={query.trim() ? filteredBooks : books.slice(0, 3)}
-        favoriteIds={favoriteIds}
-        onOpenBook={onOpenBook}
-        onToggleFavorite={onToggleFavorite}
-      />
-
-      <SectionHeader title="Kategorie" />
-
-      <View style={styles.categoryGrid}>
-        {categories.map((category) => (
-          <CategoryTile
-            key={category}
-            category={category}
-            onPress={() => onOpenCategory(category)}
-          />
-        ))}
-      </View>
-    </ScrollView>
-  );
-}
-
-function PracticeScreen({ onOpenBook }: { onOpenBook: (book: Book) => void }) {
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <Text style={styles.screenTitle}>Praktyka</Text>
-
-      <Text style={styles.screenLead}>
-        Praktyczne lekcje z książek. Tu nie tylko słuchasz. Tu przekładasz
-        książkę na konkretne sytuacje z życia.
-      </Text>
-
-      {books.map((book) => (
-        <View key={book.id} style={styles.practiceBookCard}>
-          <View style={styles.practiceBookHeader}>
-            <BookCover book={book} />
-
-            <View style={styles.practiceBookInfo}>
-              <Text style={styles.practiceBookTitle}>{book.title}</Text>
-              <Text style={styles.practiceBookAuthor}>{book.author}</Text>
-              <Text style={styles.practiceBookMeta}>
-                {book.practicalLessons.length} praktyczne lekcje
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.practiceSectionTitle}>
-            Praktyczne lekcje z książki
-          </Text>
-
-          {book.practicalLessons.map((lesson, index) => (
-            <View key={lesson.title} style={styles.practiceMiniCard}>
-              <Text style={styles.practiceNumber}>{index + 1}</Text>
-
-              <View style={styles.practiceMiniContent}>
-                <Text style={styles.practiceMiniTitle}>{lesson.title}</Text>
-                <Text style={styles.practiceMiniText}>{lesson.description}</Text>
-              </View>
-            </View>
-          ))}
-
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={() => onOpenBook(book)}
-          >
-            <Text style={styles.secondaryButtonText}>Otwórz całą książkę</Text>
-          </Pressable>
-        </View>
-      ))}
-    </ScrollView>
-  );
-}
-
-function CategoryScreen({
-  category,
-  favoriteIds,
-  onBack,
-  onOpenBook,
-  onToggleFavorite,
-}: {
-  category: string;
-  favoriteIds: string[];
-  onBack: () => void;
-  onOpenBook: (book: Book) => void;
-  onToggleFavorite: (bookId: string) => void;
-}) {
-  const categoryBooks = books.filter((book) =>
-    book.categories.includes(category)
-  );
-
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <Pressable style={styles.backButton} onPress={onBack}>
-        <Text style={styles.backButtonText}>← Wróć</Text>
-      </Pressable>
-
-      <Text style={styles.screenTitle}>{category}</Text>
-
-      <Text style={styles.screenLead}>
-        Książki w tej kategorii. Każda zawiera 13 minut książki oraz praktyczne
-        lekcje z książki.
-      </Text>
-
-      <VerticalBookList
-        booksToShow={categoryBooks}
-        favoriteIds={favoriteIds}
-        onOpenBook={onOpenBook}
-        onToggleFavorite={onToggleFavorite}
-      />
-    </ScrollView>
-  );
-}
-
-function BookScreen({
-  book,
-  isFavorite,
-  onBack,
-  onToggleFavorite,
-}: {
-  book: Book;
-  isFavorite: boolean;
-  onBack: () => void;
-  onToggleFavorite: () => void;
-}) {
-  const player = useAudioPlayer(require('./assets/audio/sample.mp3'));
+function AudioPlayer({ source, book }: { source: any; book: Book }) {
+  const player = useAudioPlayer(source);
   const status = useAudioPlayerStatus(player);
 
-  const currentTime = formatSeconds(status.currentTime);
-  const duration = formatSeconds(status.duration);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const progressWidthRef = useRef(1);
+
+  const currentTimeSeconds = status.currentTime || 0;
+  const durationSeconds = status.duration || 0;
+
+  const currentTime = formatSeconds(currentTimeSeconds);
+  const duration = formatSeconds(durationSeconds);
+
+  const progressPercent =
+    durationSeconds > 0
+      ? Math.min(100, Math.max(0, (currentTimeSeconds / durationSeconds) * 100))
+      : 0;
+
+  const playbackRates = [1, 1.25, 1.5, 1.75];
+
+  const seekToLocation = (event: GestureResponderEvent) => {
+    if (!durationSeconds) {
+      return;
+    }
+
+    const locationX = event.nativeEvent.locationX || 0;
+    const progressWidth = progressWidthRef.current || 1;
+    const nextPercent = Math.min(1, Math.max(0, locationX / progressWidth));
+    const nextTime = durationSeconds * nextPercent;
+
+    player.seekTo(nextTime);
+  };
+
+  const progressPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: seekToLocation,
+        onPanResponderMove: seekToLocation,
+      }),
+    [durationSeconds]
+  );
+
+  const handleProgressLayout = (event: LayoutChangeEvent) => {
+    progressWidthRef.current = event.nativeEvent.layout.width || 1;
+  };
 
   const handlePlayPause = () => {
     if (status.playing) {
@@ -403,1260 +202,1066 @@ function BookScreen({
     player.play();
   };
 
+  const handleSeek = (seconds: number) => {
+    const nextTime = Math.min(
+      Math.max(currentTimeSeconds + seconds, 0),
+      durationSeconds || currentTimeSeconds + seconds
+    );
+
+    player.seekTo(nextTime);
+  };
+
+  const handleChangeSpeed = () => {
+    const currentIndex = playbackRates.findIndex((rate) => rate === playbackRate);
+    const nextRate = playbackRates[(currentIndex + 1) % playbackRates.length];
+
+    setPlaybackRate(nextRate);
+
+    const playerAny = player as any;
+
+    if (typeof playerAny.setPlaybackRate === 'function') {
+      playerAny.setPlaybackRate(nextRate);
+      return;
+    }
+
+    if ('playbackRate' in playerAny) {
+      playerAny.playbackRate = nextRate;
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <Pressable style={styles.backButton} onPress={onBack}>
-        <Text style={styles.backButtonText}>← Wróć</Text>
-      </Pressable>
+    <View style={styles.playerScreenCard}>
+      <BookCover book={book} size="player" />
 
-      <View style={styles.bookDetailCard}>
-        <View style={styles.bookDetailTop}>
-          <BookCover book={book} large />
+      <Text style={styles.playerBookTitle} numberOfLines={2}>
+        {getBookTitle(book)}
+      </Text>
 
-          <View style={styles.bookDetailInfo}>
-            <Text style={styles.badge}>{book.categories[0]}</Text>
-            <Text style={styles.bookDetailTitle}>{book.title}</Text>
-            <Text style={styles.meta}>
-              {book.author} • {book.durationMinutes} minut
-            </Text>
+      <Text style={styles.playerBookAuthor} numberOfLines={1}>
+        {getBookAuthor(book)}
+      </Text>
 
-            <Pressable
-              style={styles.favoriteDetailButton}
-              onPress={onToggleFavorite}
-            >
-              <Text style={styles.favoriteDetailButtonText}>
-                {isFavorite ? '♥ W ulubionych' : '♡ Dodaj do ulubionych'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <Text style={styles.screenLead}>{book.description}</Text>
-
-        <View style={styles.twoPartCard}>
-          <Text style={styles.partLabel}>Część 1</Text>
-          <Text style={styles.partTitle}>13 minut książki</Text>
-          <Text style={styles.partText}>{book.bookSummaryDescription}</Text>
-
-          <View style={styles.playerCard}>
-            <Text style={styles.playerTitle}>Odtwarzacz audio</Text>
-
-            <Text style={styles.playerTime}>
-              {currentTime} / {duration}
-            </Text>
-
-            <Pressable style={styles.playButton} onPress={handlePlayPause}>
-              <Text style={styles.playButtonText}>
-                {status.playing ? 'Pauza' : 'Odtwórz'}
-              </Text>
-            </Pressable>
-
-            <View style={styles.spacer10} />
-
-            <Pressable style={styles.replayButton} onPress={handleReplay}>
-              <Text style={styles.replayButtonText}>Od początku</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.twoPartCard}>
-          <Text style={styles.partLabel}>Część 2</Text>
-          <Text style={styles.partTitle}>Praktyczne lekcje z książki</Text>
-          <Text style={styles.partText}>{book.practicalLessonsTitle}</Text>
-
-          {book.practicalLessons.map((lesson, index) => (
-            <View key={lesson.title} style={styles.actionStep}>
-              <Text style={styles.actionNumber}>{index + 1}</Text>
-
-              <View style={styles.actionContent}>
-                <Text style={styles.actionTitle}>{lesson.title}</Text>
-                <Text style={styles.actionText}>{lesson.description}</Text>
-              </View>
-            </View>
-          ))}
+      <View style={styles.progressTouchArea} {...progressPanResponder.panHandlers}>
+        <View style={styles.progressTrackLarge} onLayout={handleProgressLayout}>
+          <View style={[styles.progressFillLarge, { width: `${progressPercent}%` }]} />
+          <View style={[styles.progressThumb, { left: `${progressPercent}%` }]} />
         </View>
       </View>
-    </ScrollView>
-  );
-}
 
-function MyListScreen({
-  favoriteIds,
-  onOpenBook,
-  onOpenSettings,
-  onToggleFavorite,
-}: {
-  favoriteIds: string[];
-  onOpenBook: (book: Book) => void;
-  onOpenSettings: () => void;
-  onToggleFavorite: (bookId: string) => void;
-}) {
-  const [activeTab, setActiveTab] = useState<MyListTab>('continue');
+      <View style={styles.playerTimeRow}>
+        <Text style={styles.playerTime}>{currentTime}</Text>
+        <Text style={styles.playerTime}>{duration}</Text>
+      </View>
 
-  const continueBooks = books.filter((book) => book.progressPercent);
-  const favoriteBooks = books.filter((book) => favoriteIds.includes(book.id));
-  const completedBooks = books.filter((book) => book.isCompleted);
+      <View style={styles.playerControlsRow}>
+        <Pressable style={styles.iconControlButton} onPress={handleReplay}>
+          <Text style={styles.iconControlText}>↺</Text>
+        </Pressable>
 
-  const visibleBooks =
-    activeTab === 'continue'
-      ? continueBooks
-      : activeTab === 'favorites'
-        ? favoriteBooks
-        : completedBooks;
+        <Pressable style={styles.seekControlButton} onPress={() => handleSeek(-15)}>
+          <Text style={styles.seekControlText}>-15</Text>
+        </Pressable>
 
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.headerRow}>
-        <Text style={styles.screenTitleNoMargin}>Moja lista</Text>
+        <Pressable style={styles.playCircleButton} onPress={handlePlayPause}>
+          <Text style={styles.playCircleText}>{status.playing ? 'Ⅱ' : '▶'}</Text>
+        </Pressable>
 
-        <Pressable style={styles.settingsButton} onPress={onOpenSettings}>
-          <Text style={styles.settingsButtonText}>⚙</Text>
+        <Pressable style={styles.seekControlButton} onPress={() => handleSeek(15)}>
+          <Text style={styles.seekControlText}>+15</Text>
+        </Pressable>
+
+        <Pressable style={styles.speedCompactButton} onPress={handleChangeSpeed}>
+          <Text style={styles.speedCompactText}>{playbackRate}x</Text>
         </Pressable>
       </View>
-
-      <View style={styles.tabs}>
-        <TabButton
-          label="Kontynuuj"
-          active={activeTab === 'continue'}
-          onPress={() => setActiveTab('continue')}
-        />
-        <TabButton
-          label="Ulubione"
-          active={activeTab === 'favorites'}
-          onPress={() => setActiveTab('favorites')}
-        />
-        <TabButton
-          label="Ukończone"
-          active={activeTab === 'completed'}
-          onPress={() => setActiveTab('completed')}
-        />
-      </View>
-
-      <VerticalBookList
-        booksToShow={visibleBooks}
-        favoriteIds={favoriteIds}
-        onOpenBook={onOpenBook}
-        onToggleFavorite={onToggleFavorite}
-      />
-    </ScrollView>
-  );
-}
-
-function SettingsScreen({ onBack }: { onBack: () => void }) {
-  return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <Pressable style={styles.backButton} onPress={onBack}>
-        <Text style={styles.backButtonText}>← Wróć</Text>
-      </Pressable>
-
-      <Text style={styles.screenTitle}>Ustawienia</Text>
-
-      <View style={styles.settingsSection}>
-        <Text style={styles.settingsSectionTitle}>Konto</Text>
-        <SettingsRow label="Imię: Łukasz" />
-        <SettingsRow label="Zmień język" />
-        <SettingsRow label="Kontakt z pomocą techniczną" />
-        <SettingsRow label="Podziel się opinią" />
-      </View>
-
-      <View style={styles.settingsSection}>
-        <Text style={styles.settingsSectionTitle}>Subskrypcja</Text>
-        <SettingsRow label="Plan: wersja testowa MVP" />
-        <SettingsRow label="Zarządzaj subskrypcją" />
-      </View>
-
-      <Text style={styles.versionText}>13 Minut Przewagi • MVP 0.8</Text>
-    </ScrollView>
-  );
-}
-
-function HorizontalBookList({
-  booksToShow,
-  favoriteIds,
-  onOpenBook,
-  onToggleFavorite,
-}: {
-  booksToShow: Book[];
-  favoriteIds: string[];
-  onOpenBook: (book: Book) => void;
-  onToggleFavorite: (bookId: string) => void;
-}) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.horizontalList}
-    >
-      {booksToShow.map((book) => (
-        <CompactBookCard
-          key={book.id}
-          book={book}
-          isFavorite={favoriteIds.includes(book.id)}
-          onPress={() => onOpenBook(book)}
-          onToggleFavorite={() => onToggleFavorite(book.id)}
-        />
-      ))}
-    </ScrollView>
-  );
-}
-
-function VerticalBookList({
-  booksToShow,
-  favoriteIds,
-  onOpenBook,
-  onToggleFavorite,
-}: {
-  booksToShow: Book[];
-  favoriteIds: string[];
-  onOpenBook: (book: Book) => void;
-  onToggleFavorite: (bookId: string) => void;
-}) {
-  if (booksToShow.length === 0) {
-    return (
-      <View style={styles.emptyCard}>
-        <Text style={styles.emptyTitle}>Brak wyników</Text>
-        <Text style={styles.emptyText}>
-          Spróbuj wpisać inny tytuł, autora albo kategorię.
-        </Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.verticalList}>
-      {booksToShow.map((book) => (
-        <WideBookCard
-          key={book.id}
-          book={book}
-          isFavorite={favoriteIds.includes(book.id)}
-          onPress={() => onOpenBook(book)}
-          onToggleFavorite={() => onToggleFavorite(book.id)}
-        />
-      ))}
     </View>
   );
 }
 
-function CompactBookCard({
-  book,
-  isFavorite,
-  onPress,
-  onToggleFavorite,
-}: {
-  book: Book;
-  isFavorite: boolean;
-  onPress: () => void;
-  onToggleFavorite: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.compactCard, { backgroundColor: book.coverColor }]}
-    >
-      <BookCover book={book} />
-
-      <View style={styles.bookCardFooter}>
-        <Text style={styles.bookDuration}>◷ {book.durationMinutes} minut</Text>
-
-        <Pressable onPress={onToggleFavorite}>
-          <Text style={styles.heart}>{isFavorite ? '♥' : '♡'}</Text>
-        </Pressable>
-      </View>
-
-      <Text style={styles.bookCategory}>▦ {book.categories[0]}</Text>
-      <Text style={styles.listenText}>🎧 13 minut książki</Text>
-      <Text style={styles.practiceText}>✦ Praktyczne lekcje</Text>
-    </Pressable>
-  );
-}
-
-function WideBookCard({
-  book,
-  isFavorite,
-  onPress,
-  onToggleFavorite,
-}: {
-  book: Book;
-  isFavorite: boolean;
-  onPress: () => void;
-  onToggleFavorite: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.wideCard, { backgroundColor: book.coverColor }]}
-    >
-      <BookCover book={book} />
-
-      <View style={styles.wideCardContent}>
-        <View style={styles.wideCardTop}>
-          <Text style={styles.wideCardTitle}>{book.title}</Text>
-
-          <Pressable onPress={onToggleFavorite}>
-            <Text style={styles.heart}>{isFavorite ? '♥' : '♡'}</Text>
-          </Pressable>
-        </View>
-
-        <Text style={styles.wideCardAuthor}>{book.author}</Text>
-        <Text style={styles.wideCardMeta}>◷ {book.durationMinutes} minut</Text>
-        <Text style={styles.listenText}>🎧 13 minut książki</Text>
-        <Text style={styles.practiceText}>✦ Praktyczne lekcje z książki</Text>
-        <Text style={styles.wideCardCategory}>
-          ▦ {book.categories.join(', ')}
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
-function BookCover({
-  book,
-  large = false,
-}: {
-  book: Book;
-  large?: boolean;
-}) {
-  const coverImage = book.coverImage ? coverImages[book.coverImage] : undefined;
-
-  if (coverImage) {
-    return (
-      <Image
-        source={coverImage}
-        style={large ? styles.coverImageLarge : styles.coverImage}
-        resizeMode="cover"
-      />
-    );
-  }
-
-  return (
-    <View style={large ? styles.bookCoverLarge : styles.bookCover}>
-      <Text style={large ? styles.bookCoverTitleLarge : styles.bookCoverTitle}>
-        {book.coverTitle}
-      </Text>
-      <Text
-        style={large ? styles.bookCoverSubtitleLarge : styles.bookCoverSubtitle}
-      >
-        {book.coverSubtitle}
-      </Text>
-      <Text style={styles.bookCoverAuthor}>{book.author}</Text>
-    </View>
-  );
-}
-
-function CategoryTile({
-  category,
-  onPress,
-}: {
-  category: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable style={styles.categoryTile} onPress={onPress}>
-      <Text style={styles.categoryIcon}>{getCategoryIcon(category)}</Text>
-      <Text style={styles.categoryTileText}>{category}</Text>
-    </Pressable>
-  );
-}
-
-function SectionHeader({
+function Header({
   title,
-  actionLabel,
+  subtitle,
+  onSettings,
 }: {
   title: string;
-  actionLabel?: string;
+  subtitle?: string;
+  onSettings?: () => void;
 }) {
   return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {actionLabel && <Text style={styles.sectionAction}>{actionLabel} ›</Text>}
+    <View style={styles.header}>
+      <View style={styles.headerTextWrap}>
+        <Text style={styles.headerTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.headerSubtitle}>{subtitle}</Text> : null}
+      </View>
+
+      {onSettings ? (
+        <Pressable style={styles.settingsButton} onPress={onSettings}>
+          <Text style={styles.settingsIcon}>⚙</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
-function TabButton({
-  label,
-  active,
+function BookSmallCard({
+  book,
   onPress,
 }: {
-  label: string;
-  active: boolean;
+  book: Book;
   onPress: () => void;
 }) {
   return (
-    <Pressable style={active ? styles.tabActive : styles.tab} onPress={onPress}>
-      <Text style={active ? styles.tabTextActive : styles.tabText}>
-        {label}
+    <Pressable style={styles.smallBookCard} onPress={onPress}>
+      <BookCover book={book} />
+      <Text style={styles.smallBookTitle} numberOfLines={2}>
+        {getBookTitle(book)}
+      </Text>
+      <Text style={styles.smallBookAuthor} numberOfLines={1}>
+        {getBookAuthor(book)}
       </Text>
     </Pressable>
   );
 }
 
-function SettingsRow({ label }: { label: string }) {
-  return (
-    <View style={styles.settingsRow}>
-      <Text style={styles.settingsRowText}>{label}</Text>
-      <Text style={styles.settingsArrow}>›</Text>
-    </View>
-  );
-}
-
-function BottomNavigation({
-  currentScreen,
-  onNavigate,
-}: {
-  currentScreen: Screen;
-  onNavigate: (screen: MainScreen) => void;
-}) {
-  const activeScreen: MainScreen =
-    currentScreen === 'category'
-      ? 'search'
-      : currentScreen === 'book'
-        ? 'home'
-        : currentScreen === 'settings'
-          ? 'myList'
-          : currentScreen;
-
-  return (
-    <View style={styles.bottomNavigation}>
-      <NavigationItem
-        icon="⌂"
-        label="Dla Ciebie"
-        active={activeScreen === 'home'}
-        onPress={() => onNavigate('home')}
-      />
-
-      <NavigationItem
-        icon="⌕"
-        label="Szukaj"
-        active={activeScreen === 'search'}
-        onPress={() => onNavigate('search')}
-      />
-
-      <NavigationItem
-        icon="✦"
-        label="Praktyka"
-        active={activeScreen === 'practice'}
-        onPress={() => onNavigate('practice')}
-      />
-
-      <NavigationItem
-        icon="▰"
-        label="Moja lista"
-        active={activeScreen === 'myList'}
-        onPress={() => onNavigate('myList')}
-      />
-    </View>
-  );
-}
-
-function NavigationItem({
-  icon,
-  label,
-  active,
+function BookListCard({
+  book,
   onPress,
 }: {
-  icon: string;
-  label: string;
-  active: boolean;
+  book: Book;
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={active ? styles.navItemActive : styles.navItem}
-    >
-      <Text style={active ? styles.navIconActive : styles.navIcon}>{icon}</Text>
-      <Text style={active ? styles.navTextActive : styles.navText}>{label}</Text>
+    <Pressable style={styles.listCard} onPress={onPress}>
+      <BookCover book={book} />
+
+      <View style={styles.listCardContent}>
+        <Text style={styles.listCardTitle} numberOfLines={2}>
+          {getBookTitle(book)}
+        </Text>
+        <Text style={styles.listCardAuthor}>{getBookAuthor(book)}</Text>
+        <Text style={styles.listCardDescription} numberOfLines={3}>
+          {getBookDescription(book)}
+        </Text>
+      </View>
     </Pressable>
   );
 }
 
-function formatSeconds(seconds: number | undefined) {
-  const safeSeconds =
-    typeof seconds === 'number' && Number.isFinite(seconds) ? seconds : 0;
+function HomeScreen({
+  onOpenBook,
+  onSettings,
+}: {
+  onOpenBook: (book: Book) => void;
+  onSettings: () => void;
+}) {
+  const featuredBook = books[0];
 
-  const roundedSeconds = Math.floor(safeSeconds);
-  const minutes = Math.floor(roundedSeconds / 60);
-  const remainingSeconds = roundedSeconds % 60;
+  return (
+    <ScrollView contentContainerStyle={styles.screenContent}>
+      <Header title={`Dzień dobry,\n${userName} 👋`} onSettings={onSettings} />
 
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds
-    .toString()
-    .padStart(2, '0')}`;
+      {featuredBook ? (
+        <Pressable style={styles.featuredCard} onPress={() => onOpenBook(featuredBook)}>
+          <View style={styles.featuredCoverWrap}>
+            <BookCover book={featuredBook} />
+          </View>
+
+          <View style={styles.featuredContent}>
+            <Text style={styles.badge}>WYBRANE DLA CIEBIE</Text>
+            <Text style={styles.featuredTitle}>{getBookTitle(featuredBook)}</Text>
+            <Text style={styles.featuredSubtitle}>
+              13 minut książki + praktyczne lekcje z książki.
+            </Text>
+
+            <View style={styles.featuredButton}>
+              <Text style={styles.featuredButtonText}>Otwórz książkę</Text>
+            </View>
+          </View>
+        </Pressable>
+      ) : null}
+
+      <Text style={styles.sectionTitle}>Kontynuuj</Text>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
+        {books.map((book) => (
+          <BookSmallCard key={getBookId(book)} book={book} onPress={() => onOpenBook(book)} />
+        ))}
+      </ScrollView>
+
+      <Text style={styles.sectionTitle}>Ostatnio dodane</Text>
+
+      <View style={styles.verticalList}>
+        {books.map((book) => (
+          <BookListCard key={`latest-${getBookId(book)}`} book={book} onPress={() => onOpenBook(book)} />
+        ))}
+      </View>
+
+      <Text style={styles.sectionTitle}>Kategorie</Text>
+
+      <View style={styles.categoryWrap}>
+        {categories.map((category) => (
+          <View key={category} style={styles.categoryPill}>
+            <Text style={styles.categoryText}>{category}</Text>
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  );
 }
 
-function getCategoryIcon(category: string) {
-  if (category.includes('Finanse')) return '◉';
-  if (category.includes('Motywacja')) return '★';
-  if (category.includes('Rozwój')) return '▲';
-  if (category.includes('Przedsiębiorczość')) return '◆';
-  if (category.includes('Psychologia')) return '●';
-  if (category.includes('Produktywność')) return '✓';
-  if (category.includes('Zdrowie')) return '✚';
-  if (category.includes('Relacje')) return '♡';
-  return '▦';
+function SearchScreen({ onOpenBook }: { onOpenBook: (book: Book) => void }) {
+  const [query, setQuery] = useState('');
+
+  const filteredBooks = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return books;
+    }
+
+    return books.filter((book) => {
+      const searchable = [
+        getBookTitle(book),
+        getBookAuthor(book),
+        getBookDescription(book),
+        ...getBookCategories(book),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return searchable.includes(normalizedQuery);
+    });
+  }, [query]);
+
+  return (
+    <ScrollView contentContainerStyle={styles.screenContent}>
+      <Header title="Szukaj" subtitle="Znajdź książkę, autora albo temat." />
+
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Tytuł, autor lub tematyka"
+        placeholderTextColor={colors.muted}
+        value={query}
+        onChangeText={setQuery}
+      />
+
+      <Text style={styles.sectionTitle}>Wyniki</Text>
+
+      <View style={styles.verticalList}>
+        {filteredBooks.map((book) => (
+          <BookListCard key={`search-${getBookId(book)}`} book={book} onPress={() => onOpenBook(book)} />
+        ))}
+      </View>
+    </ScrollView>
+  );
 }
 
-const colors = {
-  background: '#050D1F',
-  surface: '#081528',
-  surfaceDeep: '#061020',
-  border: '#22324F',
-  borderStrong: '#3B4A67',
-  text: '#F8FAFC',
-  textMuted: '#AEB9CC',
-  textSoft: '#CBD5E1',
-  gold: '#D9A441',
-  goldSoft: '#E5B85A',
-  navyText: '#0B2A44',
-  mint: '#43C5A7',
-};
+function PracticeScreen({ onOpenBook }: { onOpenBook: (book: Book) => void }) {
+  return (
+    <ScrollView contentContainerStyle={styles.screenContent}>
+      <Header
+        title="Praktyka"
+        subtitle="Sceny, wdrożenia i konkretne sposoby użycia wiedzy z książek."
+      />
+
+      <View style={styles.verticalList}>
+        {books.map((book) => (
+          <Pressable key={`practice-${getBookId(book)}`} style={styles.practiceCard} onPress={() => onOpenBook(book)}>
+            <Text style={styles.practiceLabel}>Praktyczne lekcje</Text>
+            <Text style={styles.practiceTitle}>{getBookTitle(book)}</Text>
+            <Text style={styles.practiceText}>{getPracticalDescription(book)}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+function LibraryScreen({ onOpenBook }: { onOpenBook: (book: Book) => void }) {
+  return (
+    <ScrollView contentContainerStyle={styles.screenContent}>
+      <Header title="Moja lista" subtitle="Kontynuuj, ulubione i ukończone książki." />
+
+      <Text style={styles.sectionTitle}>Kontynuuj</Text>
+
+      <View style={styles.verticalList}>
+        {books.slice(0, 2).map((book) => (
+          <BookListCard key={`continue-${getBookId(book)}`} book={book} onPress={() => onOpenBook(book)} />
+        ))}
+      </View>
+
+      <Text style={styles.sectionTitle}>Ulubione</Text>
+
+      <View style={styles.emptyCard}>
+        <Text style={styles.emptyTitle}>Jeszcze nic tu nie ma</Text>
+        <Text style={styles.emptyText}>Dodawanie do ulubionych zrobimy w kolejnym etapie.</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>Ukończone</Text>
+
+      <View style={styles.emptyCard}>
+        <Text style={styles.emptyTitle}>Lista będzie rosła</Text>
+        <Text style={styles.emptyText}>Tutaj później pokażemy ukończone książki.</Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+function SettingsScreen() {
+  return (
+    <ScrollView contentContainerStyle={styles.screenContent}>
+      <Header title="Ustawienia" subtitle="Profil, wersja aplikacji i subskrypcja." />
+
+      <View style={styles.settingsCard}>
+        <Text style={styles.settingsRowLabel}>Imię</Text>
+        <Text style={styles.settingsRowValue}>{userName}</Text>
+      </View>
+
+      <View style={styles.settingsCard}>
+        <Text style={styles.settingsRowLabel}>Język</Text>
+        <Text style={styles.settingsRowValue}>Polski</Text>
+      </View>
+
+      <View style={styles.settingsCard}>
+        <Text style={styles.settingsRowLabel}>Subskrypcja</Text>
+        <Text style={styles.settingsRowValue}>Wkrótce</Text>
+      </View>
+
+      <View style={styles.settingsCard}>
+        <Text style={styles.settingsRowLabel}>Wersja</Text>
+        <Text style={styles.settingsRowValue}>MVP 1.0</Text>
+      </View>
+    </ScrollView>
+  );
+}
+
+function BookScreen({
+  book,
+  onBack,
+}: {
+  book: Book;
+  onBack: () => void;
+}) {
+  const bookId = getBookId(book);
+  const audioSource = audioSources[bookId];
+  const practicalLessons = Array.isArray((book as any).practicalLessons)
+    ? ((book as any).practicalLessons as Array<any>)
+    : [];
+
+  return (
+    <ScrollView contentContainerStyle={styles.playerScreenContent}>
+      <Pressable style={styles.backButtonCompact} onPress={onBack}>
+        <Text style={styles.backButtonCompactText}>← Wróć</Text>
+      </Pressable>
+
+      {audioSource ? (
+        <AudioPlayer source={audioSource} book={book} />
+      ) : (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyTitle}>Audio będzie dodane</Text>
+          <Text style={styles.emptyText}>Ten tytuł nie ma jeszcze podpiętego pliku MP3.</Text>
+        </View>
+      )}
+
+      <View style={styles.twoPartCardCompact}>
+        <Text style={styles.partLabel}>Część 2</Text>
+        <Text style={styles.partTitle}>Praktyczne lekcje z książki</Text>
+        <Text style={styles.partText}>{getPracticalDescription(book)}</Text>
+
+        {practicalLessons.length > 0 ? (
+          <View style={styles.lessonList}>
+            {practicalLessons.map((lesson, index) => (
+              <View key={`${bookId}-lesson-${index}`} style={styles.lessonCard}>
+                <Text style={styles.lessonNumber}>{index + 1}</Text>
+                <View style={styles.lessonContent}>
+                  <Text style={styles.lessonTitle}>{String(lesson.title || lesson.name || 'Lekcja')}</Text>
+                  <Text style={styles.lessonText}>
+                    {String(lesson.description || lesson.text || 'Praktyczne zastosowanie idei z książki.')}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>Praktyka w przygotowaniu</Text>
+            <Text style={styles.emptyText}>Tutaj dodamy drugie nagranie i konkretne sceny wdrożeniowe.</Text>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+function BottomNav({
+  activeTab,
+  onChangeTab,
+}: {
+  activeTab: TabId;
+  onChangeTab: (tab: TabId) => void;
+}) {
+  const items: Array<{ id: TabId; icon: string; label: string }> = [
+    { id: 'home', icon: '⌂', label: 'Dla Ciebie' },
+    { id: 'search', icon: '⌕', label: 'Szukaj' },
+    { id: 'practice', icon: '✦', label: 'Praktyka' },
+    { id: 'library', icon: '▰', label: 'Moja lista' },
+  ];
+
+  return (
+    <View style={styles.bottomNav}>
+      {items.map((item) => {
+        const isActive = activeTab === item.id;
+
+        return (
+          <Pressable
+            key={item.id}
+            style={[styles.navItem, isActive && styles.navItemActive]}
+            onPress={() => onChangeTab(item.id)}
+          >
+            <Text style={[styles.navIcon, isActive && styles.navIconActive]}>{item.icon}</Text>
+            <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>{item.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<TabId>('home');
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+
+  const openBook = (book: Book) => {
+    setSelectedBook(book);
+  };
+
+  const closeBook = () => {
+    setSelectedBook(null);
+  };
+
+  const changeTab = (tab: TabId) => {
+    setSelectedBook(null);
+    setActiveTab(tab);
+  };
+
+  let content = null;
+
+  if (selectedBook) {
+    content = <BookScreen book={selectedBook} onBack={closeBook} />;
+  } else if (activeTab === 'home') {
+    content = <HomeScreen onOpenBook={openBook} onSettings={() => setActiveTab('settings')} />;
+  } else if (activeTab === 'search') {
+    content = <SearchScreen onOpenBook={openBook} />;
+  } else if (activeTab === 'practice') {
+    content = <PracticeScreen onOpenBook={openBook} />;
+  } else if (activeTab === 'library') {
+    content = <LibraryScreen onOpenBook={openBook} />;
+  } else {
+    content = <SettingsScreen />;
+  }
+
+  return (
+    <SafeAreaView style={styles.app}>
+      <StatusBar style="light" />
+      <View style={styles.main}>{content}</View>
+
+      {!selectedBook ? <BottomNav activeTab={activeTab} onChangeTab={changeTab} /> : null}
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
   app: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  content: {
+  main: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  page: {
-    flexGrow: 1,
-    padding: 18,
-    paddingBottom: 104,
+  screenContent: {
+    padding: 22,
+    paddingBottom: 120,
   },
-  headerRow: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
+  playerScreenContent: {
+    paddingHorizontal: 22,
+    paddingTop: 14,
+    paddingBottom: 70,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 22,
+    marginBottom: 28,
   },
-  greeting: {
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: '900',
-    lineHeight: 40,
+  headerTextWrap: {
+    flex: 1,
+    paddingRight: 14,
   },
-  greetingName: {
+  headerTitle: {
     color: colors.text,
-    fontSize: 34,
+    fontSize: 42,
+    lineHeight: 50,
     fontWeight: '900',
-    lineHeight: 40,
+    letterSpacing: -1,
+  },
+  headerSubtitle: {
+    color: colors.muted,
+    fontSize: 16,
+    lineHeight: 23,
+    marginTop: 10,
+    fontWeight: '600',
   },
   settingsButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.surface,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
-  settingsButtonText: {
+  settingsIcon: {
     color: colors.gold,
-    fontSize: 24,
-    fontWeight: '900',
+    fontSize: 34,
   },
   featuredCard: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 26,
-    padding: 18,
+    flexDirection: 'row',
+    gap: 18,
     borderWidth: 1,
     borderColor: colors.border,
-    flexDirection: 'row',
-    marginBottom: 24,
+    borderRadius: 30,
+    padding: 20,
+    backgroundColor: colors.card,
+    marginBottom: 30,
   },
-  featuredLogo: {
-    width: 110,
-    height: 110,
-    borderRadius: 20,
-    marginRight: 16,
+  featuredCoverWrap: {
+    width: 130,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   featuredContent: {
     flex: 1,
   },
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.gold,
-    color: colors.surfaceDeep,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    fontSize: 10,
+    backgroundColor: colors.goldDark,
+    color: colors.text,
     fontWeight: '900',
-    marginBottom: 10,
-    textTransform: 'uppercase',
+    fontSize: 13,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginBottom: 14,
   },
   featuredTitle: {
     color: colors.text,
-    fontSize: 22,
+    fontSize: 27,
+    lineHeight: 34,
     fontWeight: '900',
-    marginBottom: 8,
-  },
-  featuredDescription: {
-    color: colors.textSoft,
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 12,
-  },
-  smallGoldButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.gold,
-    borderRadius: 13,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  smallGoldButtonText: {
-    color: colors.surfaceDeep,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  screenTitle: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: '900',
-    lineHeight: 40,
     marginBottom: 14,
   },
-  screenTitleNoMargin: {
-    color: colors.text,
-    fontSize: 34,
-    fontWeight: '900',
-    lineHeight: 40,
-  },
-  screenLead: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    color: colors.textSoft,
-    fontSize: 15,
-    lineHeight: 23,
+  featuredSubtitle: {
+    color: colors.muted,
+    fontSize: 17,
+    lineHeight: 25,
+    fontWeight: '600',
     marginBottom: 18,
   },
-  sectionHeader: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-    marginTop: 2,
+  featuredButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.goldDark,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    borderRadius: 18,
+  },
+  featuredButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '900',
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 23,
+    fontSize: 28,
     fontWeight: '900',
-    marginBottom: 10,
-  },
-  sectionAction: {
-    color: colors.goldSoft,
-    fontSize: 15,
-    fontWeight: '800',
-    marginBottom: 10,
+    marginBottom: 16,
+    marginTop: 8,
   },
   horizontalList: {
-    paddingRight: 18,
-    paddingBottom: 22,
+    gap: 16,
+    paddingRight: 20,
+    paddingBottom: 26,
   },
-  compactCard: {
-    width: 190,
-    borderRadius: 20,
+  smallBookCard: {
+    width: 160,
+    borderRadius: 24,
     padding: 14,
-    marginRight: 14,
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: colors.border,
   },
-  coverImage: {
-    width: 118,
-    height: 154,
-    borderRadius: 10,
-    alignSelf: 'center',
-    marginBottom: 12,
-  },
-  coverImageLarge: {
-    width: 130,
-    height: 170,
-    borderRadius: 12,
-    marginRight: 16,
-  },
-  bookCover: {
-    width: 118,
-    height: 154,
-    borderRadius: 10,
-    backgroundColor: colors.surfaceDeep,
-    padding: 10,
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: 12,
-  },
-  bookCoverLarge: {
-    width: 130,
-    height: 170,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceDeep,
-    padding: 12,
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  bookCoverTitle: {
+  smallBookTitle: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: '900',
-    textAlign: 'center',
-    textTransform: 'uppercase',
+    marginTop: 12,
   },
-  bookCoverTitleLarge: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '900',
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  bookCoverSubtitle: {
-    color: colors.gold,
+  smallBookAuthor: {
+    color: colors.muted,
     fontSize: 13,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: '700',
     marginTop: 4,
-    textTransform: 'uppercase',
-  },
-  bookCoverSubtitleLarge: {
-    color: colors.gold,
-    fontSize: 14,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginTop: 5,
-    textTransform: 'uppercase',
-  },
-  bookCoverAuthor: {
-    color: colors.textMuted,
-    fontSize: 9,
-    textAlign: 'center',
-    marginTop: 14,
-  },
-  bookCardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  bookDuration: {
-    color: colors.navyText,
-    fontSize: 13,
-    fontWeight: '800',
-    marginBottom: 5,
-  },
-  bookCategory: {
-    color: colors.navyText,
-    fontSize: 13,
-    fontWeight: '800',
-    marginBottom: 5,
-  },
-  heart: {
-    color: colors.navyText,
-    fontSize: 26,
-    fontWeight: '900',
-  },
-  listenText: {
-    color: colors.mint,
-    fontSize: 14,
-    fontWeight: '900',
-    marginBottom: 3,
-  },
-  practiceText: {
-    color: colors.navyText,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  searchInput: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    color: colors.text,
-    fontSize: 16,
-    marginBottom: 24,
   },
   verticalList: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
+    gap: 14,
+    marginBottom: 24,
   },
-  wideCard: {
-    width: '100%',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 14,
+  listCard: {
     flexDirection: 'row',
+    gap: 15,
+    borderRadius: 24,
+    padding: 14,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: colors.border,
   },
-  wideCardContent: {
+  listCardContent: {
     flex: 1,
-    marginLeft: 14,
   },
-  wideCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  wideCardTitle: {
-    flex: 1,
-    color: colors.navyText,
-    fontSize: 23,
-    lineHeight: 29,
+  listCardTitle: {
+    color: colors.text,
+    fontSize: 20,
+    lineHeight: 25,
     fontWeight: '900',
-    marginRight: 8,
   },
-  wideCardAuthor: {
-    color: colors.navyText,
-    fontSize: 15,
-    fontWeight: '700',
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  wideCardMeta: {
-    color: colors.navyText,
+  listCardAuthor: {
+    color: colors.gold,
     fontSize: 14,
     fontWeight: '800',
-    marginBottom: 4,
+    marginTop: 5,
   },
-  wideCardCategory: {
-    color: colors.navyText,
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 19,
-    marginTop: 4,
+  listCardDescription: {
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
+    fontWeight: '600',
   },
-  categoryGrid: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  coverImage: {
+    width: 132,
+    height: 190,
+    borderRadius: 18,
+    backgroundColor: colors.cardSoft,
   },
-  categoryTile: {
-    width: '48%',
-    minHeight: 112,
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    marginBottom: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryIcon: {
-    color: colors.gold,
-    fontSize: 30,
-    fontWeight: '900',
-    marginBottom: 8,
-  },
-  categoryTileText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  backButton: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  backButtonText: {
-    color: colors.goldSoft,
-    fontSize: 17,
-    fontWeight: '900',
-  },
-  bookDetailCard: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
+  coverImageLarge: {
+    width: 210,
+    height: 300,
     borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.cardSoft,
+    alignSelf: 'center',
+    marginBottom: 24,
   },
-  bookDetailTop: {
-    flexDirection: 'row',
+  coverImagePlayer: {
+    width: 170,
+    height: 240,
+    borderRadius: 24,
+    backgroundColor: colors.cardSoft,
+    alignSelf: 'center',
     marginBottom: 18,
   },
-  bookDetailInfo: {
-    flex: 1,
-  },
-  bookDetailTitle: {
-    color: colors.text,
-    fontSize: 27,
-    lineHeight: 33,
-    fontWeight: '900',
-    marginBottom: 8,
-  },
-  meta: {
-    color: colors.gold,
-    fontSize: 14,
-    fontWeight: '800',
-    marginBottom: 12,
-  },
-  favoriteDetailButton: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-  },
-  favoriteDetailButtonText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  twoPartCard: {
-    backgroundColor: colors.surfaceDeep,
+  coverFallback: {
+    width: 132,
+    height: 190,
+    borderRadius: 18,
+    backgroundColor: '#101723',
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
   },
-  partLabel: {
+  coverFallbackLarge: {
+    width: 210,
+    height: 300,
+    borderRadius: 24,
+    backgroundColor: '#101723',
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+    alignSelf: 'center',
+    marginBottom: 24,
+  },
+  coverFallbackPlayer: {
+    width: 170,
+    height: 240,
+    borderRadius: 24,
+    backgroundColor: '#101723',
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    alignSelf: 'center',
+    marginBottom: 18,
+  },
+  coverFallbackNumber: {
+    color: colors.text,
+    fontSize: 52,
+    fontWeight: '900',
+  },
+  coverFallbackText: {
     color: colors.gold,
     fontSize: 12,
     fontWeight: '900',
-    textTransform: 'uppercase',
-    marginBottom: 6,
+    textAlign: 'center',
+    letterSpacing: 1,
   },
-  partTitle: {
-    color: colors.text,
-    fontSize: 23,
-    fontWeight: '900',
-    marginBottom: 8,
+  categoryWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  partText: {
-    color: colors.textSoft,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 14,
-  },
-  playerCard: {
-    backgroundColor: colors.background,
+  categoryPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 18,
-    padding: 14,
+    borderColor: colors.border,
   },
-  playerTitle: {
-    color: colors.text,
-    fontSize: 19,
-    fontWeight: '900',
-    marginBottom: 8,
-  },
-  playerTime: {
-    color: colors.textSoft,
-    fontSize: 15,
-    marginBottom: 14,
-  },
-  playButton: {
-    backgroundColor: colors.gold,
-    borderRadius: 15,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  playButtonText: {
-    color: colors.surfaceDeep,
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  replayButton: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 15,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  replayButtonText: {
-    color: colors.text,
+  categoryText: {
+    color: colors.muted,
     fontSize: 14,
     fontWeight: '800',
   },
-  actionStep: {
-    flexDirection: 'row',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-  },
-  actionNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.gold,
-    color: colors.surfaceDeep,
-    textAlign: 'center',
-    lineHeight: 28,
-    fontWeight: '900',
-    marginRight: 10,
-  },
-  actionContent: {
-    flex: 1,
-  },
-  actionTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '900',
-    marginBottom: 4,
-  },
-  actionText: {
-    color: colors.textSoft,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  practiceBookCard: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
+  searchInput: {
+    backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 22,
-    padding: 16,
-    marginBottom: 18,
-  },
-  practiceBookHeader: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  practiceBookInfo: {
-    flex: 1,
-    marginLeft: 14,
-  },
-  practiceBookTitle: {
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     color: colors.text,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 22,
+  },
+  practiceCard: {
+    borderRadius: 26,
+    padding: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  practiceLabel: {
+    color: colors.gold,
+    fontSize: 13,
     fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  practiceTitle: {
+    color: colors.text,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '900',
+    marginBottom: 10,
+  },
+  practiceText: {
+    color: colors.muted,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
+  },
+  emptyCard: {
+    borderRadius: 22,
+    padding: 18,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  emptyTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  emptyText: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+  },
+  settingsCard: {
+    borderRadius: 22,
+    padding: 18,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 12,
+  },
+  settingsRowLabel: {
+    color: colors.muted,
+    fontSize: 14,
+    fontWeight: '800',
     marginBottom: 5,
   },
-  practiceBookAuthor: {
-    color: colors.textSoft,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 8,
+  settingsRowValue: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '900',
   },
-  practiceBookMeta: {
+  backButtonCompact: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: colors.cardSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 12,
+  },
+  backButtonCompactText: {
     color: colors.gold,
     fontSize: 14,
     fontWeight: '900',
   },
-  practiceSectionTitle: {
-    color: colors.text,
-    fontSize: 20,
-    fontWeight: '900',
-    marginBottom: 12,
-  },
-  practiceMiniCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceDeep,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 16,
-    padding: 13,
-    marginBottom: 10,
-  },
-  practiceNumber: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.gold,
-    color: colors.surfaceDeep,
-    textAlign: 'center',
-    lineHeight: 26,
-    fontWeight: '900',
-    marginRight: 10,
-  },
-  practiceMiniContent: {
-    flex: 1,
-  },
-  practiceMiniTitle: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '900',
-    marginBottom: 4,
-  },
-  practiceMiniText: {
-    color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    paddingVertical: 13,
-    borderRadius: 15,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  secondaryButtonText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  tabs: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  tab: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 999,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  tabActive: {
-    flex: 1,
-    backgroundColor: colors.gold,
-    borderRadius: 999,
-    paddingVertical: 10,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  tabText: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  tabTextActive: {
-    color: colors.surfaceDeep,
-    fontSize: 13,
-    fontWeight: '900',
-  },
-  settingsSection: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    marginBottom: 26,
-  },
-  settingsSectionTitle: {
-    color: colors.text,
-    fontSize: 23,
-    fontWeight: '900',
-    marginBottom: 10,
-  },
-  settingsRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: 17,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  settingsRowText: {
-    color: colors.textSoft,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  settingsArrow: {
-    color: colors.goldSoft,
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  versionText: {
-    color: colors.textMuted,
-    textAlign: 'center',
-    fontSize: 13,
-    marginTop: 10,
-  },
-  emptyCard: {
-    width: '100%',
-    maxWidth: 680,
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 20,
+  playerScreenCard: {
+    backgroundColor: '#071426',
+    borderRadius: 30,
     padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+  },
+  playerBookTitle: {
+    color: colors.text,
+    fontSize: 26,
+    lineHeight: 31,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  playerBookAuthor: {
+    color: colors.gold,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '900',
+    textAlign: 'center',
     marginBottom: 18,
   },
-  emptyTitle: {
+  progressTouchArea: {
+    height: 34,
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  progressTrackLarge: {
+    height: 10,
+    backgroundColor: '#1B2535',
+    borderRadius: 999,
+    overflow: 'visible',
+  },
+  progressFillLarge: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 999,
+  },
+  progressThumb: {
+    position: 'absolute',
+    top: -5,
+    width: 20,
+    height: 20,
+    marginLeft: -10,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: colors.gold,
+  },
+  playerTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    marginBottom: 18,
+  },
+  playerTime: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '900',
-    marginBottom: 8,
   },
-  emptyText: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  bottomNavigation: {
-    height: 78,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+  playerControlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 8,
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  iconControlButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#101A2A',
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconControlText: {
+    color: colors.gold,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  seekControlButton: {
+    width: 52,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#101A2A',
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seekControlText: {
+    color: colors.gold,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  playCircleButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: colors.goldDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playCircleText: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: '900',
+    marginLeft: 2,
+  },
+  speedCompactButton: {
+    width: 58,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#101A2A',
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  speedCompactText: {
+    color: colors.gold,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  twoPartCardCompact: {
+    borderRadius: 24,
+    padding: 18,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 18,
+  },
+  partLabel: {
+    color: colors.gold,
+    fontSize: 13,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  partTitle: {
+    color: colors.text,
+    fontSize: 25,
+    lineHeight: 31,
+    fontWeight: '900',
+    marginBottom: 10,
+  },
+  partText: {
+    color: colors.muted,
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  lessonList: {
+    gap: 12,
+  },
+  lessonCard: {
+    flexDirection: 'row',
+    gap: 12,
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: colors.cardSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  lessonNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.goldDark,
+    color: colors.text,
+    textAlign: 'center',
+    lineHeight: 32,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  lessonContent: {
+    flex: 1,
+  },
+  lessonTitle: {
+    color: colors.text,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '900',
+  },
+  lessonText: {
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: '600',
+    marginTop: 5,
+  },
+  bottomNav: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    backgroundColor: '#080D17',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 12,
+    paddingBottom: 22,
+    paddingHorizontal: 10,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 18,
   },
   navItemActive: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceDeep,
+    backgroundColor: '#0C1420',
   },
   navIcon: {
-    color: colors.textMuted,
-    fontSize: 23,
+    color: colors.muted,
+    fontSize: 26,
     fontWeight: '900',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   navIconActive: {
-    color: colors.goldSoft,
-    fontSize: 23,
-    fontWeight: '900',
-    marginBottom: 2,
+    color: colors.gold,
   },
-  navText: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  navTextActive: {
-    color: colors.goldSoft,
-    fontSize: 11,
+  navLabel: {
+    color: colors.muted,
+    fontSize: 13,
     fontWeight: '900',
   },
-  spacer10: {
-    height: 10,
+  navLabelActive: {
+    color: colors.gold,
   },
 });
